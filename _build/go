@@ -1,0 +1,76 @@
+#!/bin/zsh
+#
+# 2013-01-22 DC: This script is for the old site, and it out of date!
+# But we keep it around in case we want to compare the old site to 
+# the new site
+# 
+# Brian Zick used this script to build the site, but we now use 
+# Jekyll for this.
+#
+# So, this indeed must do a lot. Which a lot?
+# - Handle nesting (like a file kept in doc/devel/)
+#   Probably with a prefix. Like [link to guide]({{ prefix }}doc/guide/)
+# - Add ids to headings, for linking
+
+autoload -U regexp-replace
+setopt rematchpcre
+
+markdown() { 
+	# perl ./Markdown.pl --html4tags # 43.49s
+	# multimarkdown # 32.14s
+	pandoc -f markdown -t html5 # 17.77
+	# Pandoc, despite being a larger dependency, is much faster
+	# and seems to have better output
+}
+
+replace() { 
+	regexp-replace template$2 "{{ $1 }}" "\$$1"
+}
+
+template_=$(<templates/fontforge)
+footer=$(<templates/footer.md | markdown) 
+replace footer _
+	
+template() {
+	template=$template_
+	output="www/$(basename $j .md).html"
+	print -n "$output ... " >&2
+
+	# This resets & gets page specific variables
+	#
+	title=""; bits=""; section=""
+	eval $(<"$j" | grep -B50 -m2 "+++" | head -n -1 | tail -n +2)
+	main=$(<"$j" | tail -n +6 | markdown) #todo: make this get between +++
+
+	# Replace variables
+	#
+	replace title
+	replace bits
+	replace main
+
+	# Print to output
+	#
+	print $template > $output
+
+	# Alert User
+	#
+	print "Done!" >&2
+}
+
+for j in "$@"; do
+
+	prefix=$j
+
+	regexp-replace prefix "src/" ""
+	regexp-replace prefix "[^/]" ""
+	regexp-replace prefix "/" "../"
+
+	print $prefix
+
+#	case "$j" in
+#		*oldchangelog.md) ;; # it hangs so long on this... Move it to a txt?
+#		*pfaeditchangelog.md) ;; 
+#		*) template ;;
+#	esac
+
+done

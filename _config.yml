@@ -1,0 +1,10 @@
+markdown: kramdown
+highlighter: null
+permalink: pretty
+url: https://fftesting.github.io
+plugins:
+  - jekyll-redirect-from
+include:
+  - _static
+  - _images
+
